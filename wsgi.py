@@ -48,7 +48,7 @@ def geocode_function(address):
     result['lat'] = rows[0][1]
 
     #then take the wkb and use it to get the parcel id
-    parcel_sql = "select gid from assessor_parcels where st_intersects( geom, st_transform('{geom}'::geometry, 2227))".format(geom=rows[0][2])
+    parcel_sql = "select gid from groot.assessor_parcels where st_intersects( geom, st_transform('{geom}'::geometry, 2227))".format(geom=rows[0][2])
     cur.execute(parcel_sql)
     parcel_rows = cur.fetchall()
     result['parcelid'] = parcel_rows[0][0]
@@ -71,7 +71,7 @@ def notify_function():
     conn = get_connection()
     cur = conn.cursor()
     sql_string = "SELECT st_astext( ST_Transform(a.geom, 4326)), a.gid, (a.sitnumber || ' ' ||  a.sitstreet || ', ' ||  a.sitcity || ' ' || a.sitzip) as address, a.acres " \
-                 "FROM assessor_parcels a JOIN assessor_parcels b ON ST_DWithin(a.geom, b.geom, {radius}) WHERE b.gid = {id}".format(id=parcelid, radius=distance)
+                 "FROM groot.assessor_parcels a JOIN groot.assessor_parcels b ON ST_DWithin(a.geom, b.geom, {radius}) WHERE b.gid = {id}".format(id=parcelid, radius=distance)
     cur.execute(sql_string)
     rows = cur.fetchall()
 
@@ -89,7 +89,7 @@ def get_firehazard(parcelid):
     conn = get_connection()
     cur = conn.cursor()
     if request.method == 'GET':
-        sql_string = "select gid, firehazard from assessor_parcels where gid =  {id}".format(id=parcelid)
+        sql_string = "select gid, firehazard from groot.assessor_parcels where gid =  {id}".format(id=parcelid)
         cur.execute(sql_string)
 
         rows = cur.fetchall()
@@ -105,7 +105,7 @@ def get_firehazard(parcelid):
         new_firehazard = json_response['firehazard']
 
 
-        sql = """ update assessor_parcels SET firehazard =  %s WHERE gid  = %s"""
+        sql = """ update groot.assessor_parcels SET firehazard =  %s WHERE gid  = %s"""
         conn = get_connection()
         cur = conn.cursor()
         cur.execute(sql, (new_firehazard, parcelid))
