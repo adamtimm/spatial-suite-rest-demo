@@ -51,7 +51,7 @@ def geocode_function(address):
     parcel_sql = "select gid from groot.assessor_parcels where st_intersects( geom, st_transform('{geom}'::geometry, 2227))".format(geom=rows[0][2])
     cur.execute(parcel_sql)
     parcel_rows = cur.fetchall()
-    result['parcelid'] = parcel_rows[0][0]
+    result['gid'] = parcel_rows[0][0]
 
     cur.close()
     tiger_cur.close()
@@ -65,36 +65,36 @@ def geocode_function(address):
 def notify_function():
 
     #TODO should test for parameter passing
-    parcelid  = request.args.get('parcelid', type=int)
+    gid  = request.args.get('gid', type=int)
     distance = request.args.get('dist', type=int)
 
     conn = get_connection()
     cur = conn.cursor()
     sql_string = "SELECT st_astext( ST_Transform(a.geom, 4326)), a.gid, (a.sitnumber || ' ' ||  a.sitstreet || ', ' ||  a.sitcity || ' ' || a.sitzip) as address, a.acres " \
-                 "FROM groot.assessor_parcels a JOIN groot.assessor_parcels b ON ST_DWithin(a.geom, b.geom, {radius}) WHERE b.gid = {id}".format(id=parcelid, radius=distance)
+                 "FROM groot.assessor_parcels a JOIN groot.assessor_parcels b ON ST_DWithin(a.geom, b.geom, {radius}) WHERE b.gid = {id}".format(id=gid, radius=distance)
     cur.execute(sql_string)
     rows = cur.fetchall()
 
     results = []
 
     for row in rows:
-        result = {"parcelid": str(row[1]), "address": row[2], "acres": row[3], "geom": row[0]}
+        result = {"gid": str(row[1]), "address": row[2], "acres": row[3], "geom": row[0]}
         results.append(result)
 
     return jsonify(results)
 
 
-@app.route('/parcel/firehazard/<int:parcelid>', methods=['GET', 'PUT'])
-def get_firehazard(parcelid):
+@app.route('/parcel/firehazard/<int:gid>', methods=['GET', 'PUT'])
+def get_firehazard(gid):
     conn = get_connection()
     cur = conn.cursor()
     if request.method == 'GET':
-        sql_string = "select gid, firehazard from groot.assessor_parcels where gid =  {id}".format(id=parcelid)
+        sql_string = "select gid, firehazard from groot.assessor_parcels where gid =  {id}".format(id=gid)
         cur.execute(sql_string)
 
         rows = cur.fetchall()
         for row in rows:
-            result = { "parcelid": row[0], "firehazard": str(row[1])}
+            result = { "gid": row[0], "firehazard": str(row[1])}
 
         cur.close()
         conn.close()
@@ -108,7 +108,7 @@ def get_firehazard(parcelid):
         sql = """ update groot.assessor_parcels SET firehazard =  %s WHERE gid  = %s"""
         conn = get_connection()
         cur = conn.cursor()
-        cur.execute(sql, (new_firehazard, parcelid))
+        cur.execute(sql, (new_firehazard, gid))
         conn.commit()
         cur.close()
         conn.close()
